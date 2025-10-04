@@ -303,9 +303,19 @@
                 }
 
                 .input-wrapper {
-                    flex-direction: column;
-                    gap: 5px;
-                    align-items: flex-start;
+                    flex-direction: row;
+                    gap: 8px;
+                    align-items: center;
+                    justify-content: flex-start;
+                    flex-wrap: wrap;
+                }
+
+                .input-wrapper.price-wrapper {
+                    flex-wrap: nowrap;
+                }
+
+                .input-wrapper.count-wrapper {
+                    flex-wrap: nowrap;
                 }
 
                 .result-amount {
