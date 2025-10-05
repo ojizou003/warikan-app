@@ -1,9 +1,28 @@
+/**
+ * 割り勘計算アプリケーション
+ *
+ * @description
+ * 簡単な割り勘計算を行うWebアプリケーション。
+ * 金額と人数を入力すると、一人当たりの金額と余りを計算します。
+ *
+ * @module WarikanApp
+ * @version 1.0.0
+ * @author Warikan App Team
+ */
+
 "use strict";
 
 // DOM要素の取得
+/** @type {HTMLInputElement} 金額入力フィールド */
 const priceInput = document.getElementById('price');
+
+/** @type {HTMLInputElement} 人数入力フィールド */
 const countInput = document.getElementById('count');
+
+/** @type {HTMLButtonElement} 計算実行ボタン */
 const calculateButton = document.getElementById('action');
+
+/** @type {HTMLDivElement} 結果表示エリア */
 const answerDisplay = document.getElementById('answer');
 
 // イベントリスナーの設定
@@ -21,14 +40,25 @@ countInput.addEventListener('input', enforceHalfWidthNumbers);
 countInput.addEventListener('paste', enforceHalfWidthNumbersOnPaste);
 countInput.addEventListener('focus', disableIME);
 
-// 計算機能
+/**
+ * 割り勘計算を実行するメイン関数
+ *
+ * @description
+ * ボタンクリック時のアニメーション効果、入力値の取得、バリデーション、
+ * 計算実行、結果表示までの一連の処理を管理します。
+ *
+ * @returns {void}
+ */
 function calculateSplit() {
     // ボタンにアニメーション効果
     calculateButton.classList.add('pulse');
     setTimeout(() => calculateButton.classList.remove('pulse'), 500);
 
     // 入力値の取得
+    /** @type {number} 金額 */
     const price = parseInt(priceInput.value);
+
+    /** @type {number} 人数 */
     const count = parseInt(countInput.value);
 
     // バリデーション
@@ -37,13 +67,82 @@ function calculateSplit() {
     }
 
     // 計算実行
+    /** @type {CalculationResult} 計算結果 */
     const result = performCalculation(price, count);
 
     // 結果表示
     displayResult(result);
 }
 
-// 入力変更時の処理
+/**
+ * エラー表示を強化
+ *
+ * @description
+ * エラー発生時に詳細なエラー情報と解決策を表示します。
+ *
+ * @param {ValidationResult} validation - バリデーション結果
+ * @param {string} field - エラーが発生したフィールド（'price' または 'count'）
+ * @returns {void}
+ */
+function displayValidationError(validation, field) {
+    answerDisplay.className = 'fade-in error';
+
+    // エラーメッセージを構築
+    let message = validation.errorMessage;
+
+    // エラーコードに基づいて追加のヒントを表示
+    const hints = getErrorHints(validation.errorCode, field);
+    if (hints) {
+        message += `<div class="error-hint">${hints}</div>`;
+    }
+
+    answerDisplay.innerHTML = message;
+
+    // 入力フィールドにエラー視覚効果
+    const inputField = field === 'price' ? priceInput : countInput;
+    inputField.classList.add('error');
+    setTimeout(() => {
+        inputField.classList.remove('error');
+    }, 2000);
+}
+
+/**
+ * エラーヒントを取得
+ *
+ * @description
+ * エラーコードに基づいてユーザーフレンドリーな解決策を返します。
+ *
+ * @param {string} errorCode - エラーコード
+ * @param {string} field - フィールド名
+ * @returns {string|null} エラーヒント
+ */
+function getErrorHints(errorCode, field) {
+    const hints = {
+        'PRICE_EMPTY': '例: 1000 と入力してください',
+        'PRICE_NAN': '数字のみを入力してください',
+        'PRICE_TOO_SMALL': '最小金額は1円です',
+        'PRICE_TOO_LARGE': '100億円以下の金額を入力してください',
+        'PRICE_DECIMAL': '小数点は使用できません',
+        'PRICE_TOO_LONG': '12桁以下の数字を入力してください',
+        'COUNT_EMPTY': '例: 5 と入力してください',
+        'COUNT_NAN': '数字のみを入力してください',
+        'COUNT_TOO_SMALL': '最少人数は1人です',
+        'COUNT_TOO_LARGE': '9999人以下の人数を入力してください',
+        'COUNT_DECIMAL': '人数は整数で入力してください',
+        'COUNT_TOO_LONG': '4桁以下の数字を入力してください'
+    };
+
+    return hints[errorCode] || null;
+}
+
+/**
+ * 入力変更時の処理
+ *
+ * @description
+ * 両方の入力フィールドが空の場合、表示を初期状態にリセットします。
+ *
+ * @returns {void}
+ */
 function handleInputChange() {
     // 結果表示を初期化
     if (priceInput.value === '' && countInput.value === '') {
@@ -51,40 +150,61 @@ function handleInputChange() {
     }
 }
 
-// Enterキーで計算実行
+/**
+ * Enterキー押下時の処理
+ *
+ * @description
+ * Enterキーが押された場合、計算を実行します。
+ *
+ * @param {KeyboardEvent} event - キーボードイベント
+ * @returns {void}
+ */
 function handleEnterKey(event) {
     if (event.key === 'Enter') {
         calculateSplit();
     }
 }
 
-// 表示をリセット
+/**
+ * 表示を初期状態にリセット
+ *
+ * @description
+ * 結果表示エリアを初期状態に戻します。
+ *
+ * @returns {void}
+ */
 function resetDisplay() {
     answerDisplay.textContent = '金額と人数を入力してください';
     answerDisplay.className = '';
     answerDisplay.style.color = '#666';
 }
 
-// バリデーション機能
+/**
+ * 入力値のバリデーション
+ *
+ * @description
+ * 金額と人数の入力値を詳細に検証します。
+ * 境界値チェック、文字数制限、実用範囲の検証を行います。
+ *
+ * @param {number} price - 金額
+ * @param {number} count - 人数
+ * @returns {boolean} バリデーション結果（true: 有効, false: 無効）
+ */
 function isValidInput(price, count) {
     answerDisplay.className = 'fade-in';
 
-    if (isNaN(price) || price <= 0) {
-        if (priceInput.value === '') {
-            answerDisplay.textContent = '金額を入力してください';
-        } else {
-            answerDisplay.textContent = '有効な金額を入力してください';
-        }
+    // 金額のバリデーション
+    const priceValidation = validatePrice(price);
+    if (!priceValidation.isValid) {
+        answerDisplay.textContent = priceValidation.errorMessage;
         answerDisplay.classList.add('error');
         return false;
     }
 
-    if (isNaN(count) || count <= 0) {
-        if (countInput.value === '') {
-            answerDisplay.textContent = '人数を入力してください';
-        } else {
-            answerDisplay.textContent = '有効な人数を入力してください';
-        }
+    // 人数のバリデーション
+    const countValidation = validateCount(count);
+    if (!countValidation.isValid) {
+        answerDisplay.textContent = countValidation.errorMessage;
         answerDisplay.classList.add('error');
         return false;
     }
@@ -92,9 +212,165 @@ function isValidInput(price, count) {
     return true;
 }
 
-// 計算実行機能
+/**
+ * 金額の詳細バリデーション
+ *
+ * @description
+ * 金額の入力値を詳細に検証します。
+ * 上限・下限、実用性、文字数などのチェックを行います。
+ *
+ * @param {number} price - 検証する金額
+ * @returns {ValidationResult} 検証結果
+ */
+function validatePrice(price) {
+    // 空の入力チェック
+    if (priceInput.value === '') {
+        return {
+            isValid: false,
+            errorMessage: '金額を入力してください',
+            errorCode: 'PRICE_EMPTY'
+        };
+    }
+
+    // NaNチェック
+    if (isNaN(price)) {
+        return {
+            isValid: false,
+            errorMessage: '有効な数字を入力してください',
+            errorCode: 'PRICE_NAN'
+        };
+    }
+
+    // 下限値チェック（1円未満）
+    if (price < 1) {
+        return {
+            isValid: false,
+            errorMessage: '金額は1円以上で入力してください',
+            errorCode: 'PRICE_TOO_SMALL'
+        };
+    }
+
+    // 上限値チェック（100億円超過）
+    if (price > 10000000000) {
+        return {
+            isValid: false,
+            errorMessage: '金額が大きすぎます。100億円以下で入力してください',
+            errorCode: 'PRICE_TOO_LARGE'
+        };
+    }
+
+    // 実用性チェック（1円未満の端数がある場合）
+    if (!Number.isInteger(price)) {
+        return {
+            isValid: false,
+            errorMessage: '金額は整数で入力してください',
+            errorCode: 'PRICE_DECIMAL'
+        };
+    }
+
+    // 文字数チェック（入力が長すぎる場合）
+    if (priceInput.value.length > 12) {
+        return {
+            isValid: false,
+            errorMessage: '金額の桁数が多すぎます。12桁以下で入力してください',
+            errorCode: 'PRICE_TOO_LONG'
+        };
+    }
+
+    return {
+        isValid: true,
+        errorMessage: '',
+        errorCode: null
+    };
+}
+
+/**
+ * 人数の詳細バリデーション
+ *
+ * @description
+ * 人数の入力値を詳細に検証します。
+ * 上限・下限、実用性、文字数などのチェックを行います。
+ *
+ * @param {number} count - 検証する人数
+ * @returns {ValidationResult} 検証結果
+ */
+function validateCount(count) {
+    // 空の入力チェック
+    if (countInput.value === '') {
+        return {
+            isValid: false,
+            errorMessage: '人数を入力してください',
+            errorCode: 'COUNT_EMPTY'
+        };
+    }
+
+    // NaNチェック
+    if (isNaN(count)) {
+        return {
+            isValid: false,
+            errorMessage: '有効な数字を入力してください',
+            errorCode: 'COUNT_NAN'
+        };
+    }
+
+    // 下限値チェック（1人未満）
+    if (count < 1) {
+        return {
+            isValid: false,
+            errorMessage: '人数は1人以上で入力してください',
+            errorCode: 'COUNT_TOO_SMALL'
+        };
+    }
+
+    // 上限値チェック（9999人超過）
+    if (count > 9999) {
+        return {
+            isValid: false,
+            errorMessage: '人数が多すぎます。9999人以下で入力してください',
+            errorCode: 'COUNT_TOO_LARGE'
+        };
+    }
+
+    // 整数チェック（小数点が含まれる場合）
+    if (!Number.isInteger(count)) {
+        return {
+            isValid: false,
+            errorMessage: '人数は整数で入力してください',
+            errorCode: 'COUNT_DECIMAL'
+        };
+    }
+
+    // 文字数チェック（入力が長すぎる場合）
+    if (countInput.value.length > 4) {
+        return {
+            isValid: false,
+            errorMessage: '人数の桁数が多すぎます。4桁以下で入力してください',
+            errorCode: 'COUNT_TOO_LONG'
+        };
+    }
+
+    return {
+        isValid: true,
+        errorMessage: '',
+        errorCode: null
+    };
+}
+
+/**
+ * 計算実行
+ *
+ * @description
+ * 割り勘計算を実行し、一人当たりの金額と余りを計算します。
+ *
+ * @param {number} price - 総金額
+ * @param {number} count - 人数
+ * @returns {CalculationResult} 計算結果オブジェクト
+ */
 function performCalculation(price, count) {
+    /** @type {number} 一人当たりの金額 */
     const perPerson = Math.floor(price / count);
+
+    /** @type {number} 余り */
     const remainder = price % count;
 
     return {
@@ -105,7 +381,16 @@ function performCalculation(price, count) {
     };
 }
 
-// 結果表示機能
+/**
+ * 計算結果の表示
+ *
+ * @description
+ * 計算結果を画面に表示します。
+ * 割り切れる場合と余りがある場合で表示を切り替えます。
+ *
+ * @param {CalculationResult} result - 計算結果オブジェクト
+ * @returns {void}
+ */
 function displayResult(result) {
     answerDisplay.className = 'fade-in success';
 
@@ -127,11 +412,24 @@ function displayResult(result) {
     playSuccessSound();
 }
 
-// 成功音を再生（Web Audio API）
+/**
+ * 成功音を再生
+ *
+ * @description
+ * Web Audio APIを使用して計算完了時の成功音を再生します。
+ * Audio APIが使用できない場合はサイレントに失敗します。
+ *
+ * @returns {void}
+ */
 function playSuccessSound() {
     try {
+        /** @type {AudioContext} Web Audio APIコンテキスト */
         const audioContext = new (window.AudioContext || window.webkitAudioContext)();
+
+        /** @type {OscillatorNode} 音源 */
         const oscillator = audioContext.createOscillator();
+
+        /** @type {GainNode} 音量制御 */
         const gainNode = audioContext.createGain();
 
         oscillator.connect(gainNode);
@@ -151,14 +449,31 @@ function playSuccessSound() {
     }
 }
 
-// 全角数字を半角数字に変換する関数
+/**
+ * 全角数字を半角数字に変換
+ *
+ * @description
+ * Unicode文字コードの差分を使用して全角数字を半角数字に変換します。
+ *
+ * @param {string} str - 変換対象の文字列
+ * @returns {string} 変換後の文字列
+ */
 function convertFullWidthToHalfWidth(str) {
     return str.replace(/[０-９]/g, function(char) {
         return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
     });
 }
 
-// 半角数字入力を強制する関数
+/**
+ * 半角数字入力を強制
+ *
+ * @description
+ * 入力フィールドの値をリアルタイムでフィルタリングし、
+ * 全角数字を半角に変換し、数字以外の文字を削除します。
+ *
+ * @param {InputEvent} event - イン力イベント
+ * @returns {void}
+ */
 function enforceHalfWidthNumbers(event) {
     const input = event.target;
     const originalValue = input.value;
@@ -181,7 +496,15 @@ function enforceHalfWidthNumbers(event) {
     }
 }
 
-// ペースト時の半角数字制御
+/**
+ * ペースト時の半角数字制御
+ *
+ * @description
+   * ペーストされたテキストをフィルタリングし、数字のみを入力フィールドに挿入します。
+ *
+ * @param {ClipboardEvent} event - クリップボードイベント
+ * @returns {void}
+ */
 function enforceHalfWidthNumbersOnPaste(event) {
     event.preventDefault();
 
@@ -206,7 +529,15 @@ function enforceHalfWidthNumbersOnPaste(event) {
     input.setSelectionRange(newCursorPosition, newCursorPosition);
 }
 
-// IMEを無効化する関数
+/**
+ * IMEを無効化
+ *
+ * @description
+ * 日本語入力モードを無効化し、半角数字入力を強制します。
+ *
+ * @param {FocusEvent} event - フォーカスイベント
+ * @returns {void}
+ */
 function disableIME(event) {
     const input = event.target;
 
@@ -226,8 +557,18 @@ function disableIME(event) {
     }, 0);
 }
 
-// ページ読み込み時の初期化
+/**
+ * ページ読み込み時の初期化処理
+ *
+ * @description
+ * DOM読み込み完了後、フォーカス設定、イベントリスナー登録、
+ * タッチデバイス向けの最適化を行います。
+ *
+ * @listens DOMContentLoaded
+ * @returns {void}
+ */
 document.addEventListener('DOMContentLoaded', function() {
+    // 金額入力フィールドにフォーカス
     priceInput.focus();
 
     // フォームにフォーカス時の視覚効果
@@ -264,4 +605,21 @@ document.addEventListener('DOMContentLoaded', function() {
         });
     }
 });
+
+/**
+ * バリデーション結果の型定義
+ * @typedef {Object} ValidationResult
+ * @property {boolean} isValid - 検証結果（true: 有効, false: 無効）
+ * @property {string} errorMessage - エラーメッセージ
+ * @property {string|null} errorCode - エラーコード
+ */
+
+/**
+ * 計算結果の型定義
+ * @typedef {Object} CalculationResult
+ * @property {number} perPerson - 一人当たりの金額
+ * @property {number} remainder - 余り
+ * @property {number} total - 総金額
+ * @property {number} count - 人数
+ */
 
