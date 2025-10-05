@@ -1,0 +1,510 @@
+/* 割り勘アプリ スタイルシート */
+
+/* CSSカスタムプロパティ */
+:root {
+  /* カラーパレット */
+  --color-primary: #667eea;
+  --color-primary-dark: #764ba2;
+  --color-white: #ffffff;
+  --color-gray-light: #f8f9fa;
+  --color-gray-medium: #e0e0e0;
+  --color-gray-dark: #666;
+  --color-gray-darker: #333;
+  --color-success: #27ae60;
+  --color-error: #e74c3c;
+  
+  /* シャドウ */
+  --shadow-light: 0 10px 25px rgba(0, 0, 0, 0.1);
+  --shadow-medium: 0 20px 40px rgba(0, 0, 0, 0.1);
+  --shadow-button: 0 4px 15px rgba(102, 126, 234, 0.3);
+  --shadow-button-hover: 0 6px 20px rgba(102, 126, 234, 0.4);
+  --shadow-input-focus: 0 4px 12px rgba(102, 126, 234, 0.2);
+  --shadow-input-touch: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  
+  /* スペーシング */
+  --spacing-xs: 5px;
+  --spacing-sm: 10px;
+  --spacing-md: 20px;
+  --spacing-lg: 30px;
+  --spacing-xl: 40px;
+  --spacing-xxl: 50px;
+  
+  /* 角丸 */
+  --radius-sm: 8px;
+  --radius-md: 10px;
+  --radius-lg: 12px;
+  --radius-xl: 15px;
+  --radius-2xl: 20px;
+  --radius-full: 50px;
+  
+  /* フォント */
+  --font-family: 'Helvetica Neue', 'Hiragino Kaku Gothic ProN', 'Meiryo', sans-serif;
+  --font-size-xs: 0.95rem;
+  --font-size-sm: 1rem;
+  --font-size-md: 1.1rem;
+  --font-size-lg: 1.2rem;
+  --font-size-xl: 1.4rem;
+  --font-size-2xl: 1.6rem;
+  --font-size-3xl: 1.8rem;
+  --font-size-4xl: 2.5rem;
+  --font-weight-normal: 500;
+  --font-weight-medium: 600;
+  --font-weight-bold: 700;
+  
+  /* トランジション */
+  --transition-fast: 0.3s ease;
+  --transition-normal: 0.5s ease;
+  
+  /* Z-index */
+  --z-dropdown: 1000;
+  --z-modal: 1050;
+  --z-toast: 2000;
+}
+
+/* リセット */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+/* 基本要素 */
+body {
+  font-family: var(--font-family);
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  min-height: 100vh;
+  display: flex;
+  justify-content: center;
+  align-items: center;
+  padding: var(--spacing-md);
+  color: var(--color-gray-darker);
+}
+
+/* コンテナ */
+.container {
+  background: var(--color-white);
+  border-radius: var(--radius-2xl);
+  box-shadow: var(--shadow-medium);
+  padding: var(--spacing-xl);
+  max-width: 500px;
+  width: 100%;
+  text-align: center;
+}
+
+/* ヘッダー */
+h1 {
+  color: var(--color-gray-darker);
+  font-size: var(--font-size-4xl);
+  margin-bottom: var(--spacing-xs);
+  font-weight: var(--font-weight-bold);
+}
+
+.emoji {
+  font-size: 3rem;
+  margin-bottom: var(--spacing-md);
+}
+
+/* 入力グループ */
+.input-group {
+  margin: var(--spacing-xl) 0;
+}
+
+.input-wrapper {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--spacing-sm);
+  margin: var(--spacing-md) 0;
+  flex-wrap: wrap;
+}
+
+.input-wrapper.price-wrapper,
+.input-wrapper.count-wrapper {
+  justify-content: flex-start;
+}
+
+/* 入力フィールド */
+input[type="number"] {
+  width: 120px;
+  padding: 15px;
+  font-size: var(--font-size-lg);
+  border: 2px solid var(--color-gray-medium);
+  border-radius: var(--radius-md);
+  text-align: center;
+  transition: all var(--transition-fast);
+  background: var(--color-gray-light);
+  /* IMEを無効化（IE/Edge向け） */
+  ime-mode: disabled;
+}
+
+input[type="number"]:focus {
+  outline: none;
+  border-color: var(--color-primary);
+  background: var(--color-white);
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-input-focus);
+}
+
+#price {
+  width: 160px;
+}
+
+#count {
+  width: 90px;
+}
+
+.input-label {
+  font-size: var(--font-size-md);
+  color: var(--color-gray-dark);
+  font-weight: var(--font-weight-normal);
+}
+
+/* ボタン */
+.calculate-btn {
+  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  color: var(--color-white);
+  border: none;
+  padding: 18px 40px;
+  font-size: var(--font-size-lg);
+  font-weight: var(--font-weight-medium);
+  border-radius: var(--radius-full);
+  cursor: pointer;
+  transition: all var(--transition-fast);
+  margin: var(--spacing-lg) 0;
+  box-shadow: var(--shadow-button);
+}
+
+.calculate-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: var(--shadow-button-hover);
+}
+
+.calculate-btn:active {
+  transform: translateY(0);
+}
+
+/* 結果表示 */
+.result-container {
+  margin-top: var(--spacing-lg);
+  padding: 25px;
+  background: var(--color-gray-light);
+  border-radius: var(--radius-xl);
+  min-height: 80px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+#answer {
+  font-size: var(--font-size-xl);
+  font-weight: var(--font-weight-medium);
+  color: var(--color-gray-darker);
+  line-height: 1.6;
+}
+
+#answer.error {
+  color: var(--color-error);
+}
+
+#answer.success {
+  color: var(--color-success);
+}
+
+.result-amount {
+  font-size: 2rem;
+  color: var(--color-primary);
+  font-weight: var(--font-weight-bold);
+  margin: var(--spacing-sm) 0;
+}
+
+.result-detail {
+  font-size: var(--font-size-md);
+  color: var(--color-gray-dark);
+  margin-top: var(--spacing-sm);
+}
+
+/* タッチデバイス向けの最適化 */
+@media (hover: none) and (pointer: coarse) {
+  input[type="number"]:focus {
+    transform: none;
+    box-shadow: var(--shadow-input-touch);
+  }
+
+  .calculate-btn {
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+    user-select: none;
+    -webkit-user-select: none;
+  }
+
+  .calculate-btn:hover {
+    transform: none;
+    box-shadow: var(--shadow-button);
+  }
+
+  .calculate-btn:active {
+    transform: scale(0.98);
+    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+  }
+}
+
+/* レスポンシブデザイン */
+@media (max-width: 600px) {
+  body {
+    padding: var(--spacing-xs);
+  }
+
+  .container {
+    padding: 25px 20px;
+    margin: var(--spacing-xs);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-light);
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+    margin-bottom: var(--spacing-xs);
+  }
+
+  .emoji {
+    font-size: 2.2rem;
+    margin-bottom: 15px;
+  }
+
+  .input-group {
+    margin: var(--spacing-lg) 0;
+  }
+
+  .input-wrapper {
+    margin: 15px 0;
+    gap: var(--spacing-xs);
+  }
+
+  #price {
+    width: 120px;
+  }
+
+  #count {
+    width: 70px;
+  }
+
+  input[type="number"] {
+    padding: 14px;
+    font-size: var(--font-size-md);
+    border-radius: var(--radius-sm);
+  }
+
+  .input-label {
+    font-size: var(--font-size-sm);
+  }
+
+  .calculate-btn {
+    padding: 16px 35px;
+    font-size: var(--font-size-md);
+    margin: var(--spacing-lg) 0;
+    border-radius: 40px;
+    touch-action: manipulation;
+    -webkit-tap-highlight-color: transparent;
+  }
+
+  .result-container {
+    padding: var(--spacing-lg);
+    min-height: 70px;
+    margin-top: var(--spacing-lg);
+  }
+
+  #answer {
+    font-size: var(--font-size-md);
+  }
+
+  .result-amount {
+    font-size: var(--font-size-2xl);
+  }
+
+  .result-detail {
+    font-size: var(--font-size-sm);
+  }
+}
+
+@media (max-width: 480px) {
+  body {
+    padding: var(--spacing-xs);
+  }
+
+  .container {
+    padding: var(--spacing-lg) 15px;
+    border-radius: var(--radius-lg);
+  }
+
+  h1 {
+    font-size: var(--font-size-3xl);
+  }
+
+  .emoji {
+    font-size: 2rem;
+  }
+
+  #price {
+    width: 110px;
+  }
+
+  #count {
+    width: 65px;
+  }
+
+  input[type="number"] {
+    padding: 12px;
+    font-size: var(--font-size-sm);
+  }
+
+  .calculate-btn {
+    padding: 14px 25px;
+    font-size: var(--font-size-sm);
+    width: 100%;
+    max-width: 200px;
+  }
+
+  .input-wrapper {
+    flex-direction: row;
+    gap: var(--spacing-xs);
+    align-items: center;
+    justify-content: flex-start;
+    flex-wrap: wrap;
+  }
+
+  .input-wrapper.price-wrapper,
+  .input-wrapper.count-wrapper {
+    flex-wrap: nowrap;
+  }
+
+  .result-amount {
+    font-size: var(--font-size-xl);
+  }
+}
+
+@media (max-width: 320px) {
+  .container {
+    padding: 15px 12px;
+  }
+
+  h1 {
+    font-size: var(--font-size-2xl);
+  }
+
+  #price {
+    width: 95px;
+  }
+
+  #count {
+    width: 60px;
+  }
+
+  input[type="number"] {
+    padding: var(--spacing-xs);
+  }
+
+  .calculate-btn {
+    padding: 12px var(--spacing-lg);
+    font-size: var(--font-size-xs);
+  }
+}
+
+/* アニメーション */
+.fade-in {
+  animation: fadeIn var(--transition-normal) ease-in;
+}
+
+@keyframes fadeIn {
+  from {
+    opacity: 0;
+    transform: translateY(var(--spacing-md));
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.pulse {
+  animation: pulse var(--transition-fast) ease-in-out;
+}
+
+@keyframes pulse {
+  0% {
+    transform: scale(1);
+  }
+  50% {
+    transform: scale(1.05);
+  }
+  100% {
+    transform: scale(1);
+  }
+}
+
+@keyframes shake {
+  0%, 100% {
+    transform: translateX(0);
+  }
+  10%, 30%, 50%, 70%, 90% {
+    transform: translateX(-5px);
+  }
+  20%, 40%, 60%, 80% {
+    transform: translateX(5px);
+  }
+}
+
+/* エラー状態 */
+.error {
+  color: var(--color-error) !important;
+  background-color: #fdf2f2;
+  border: 1px solid #fecaca;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+}
+
+input.error {
+  border-color: var(--color-error) !important;
+  box-shadow: 0 0 0 3px rgba(231, 76, 60, 0.1) !important;
+  animation: shake 0.5s ease-in-out;
+}
+
+.error-hint {
+  font-size: var(--font-size-xs);
+  color: #9ca3af;
+  margin-top: var(--spacing-xs);
+  font-style: italic;
+}
+
+/* 成功状態 */
+.success {
+  color: var(--color-success) !important;
+  background-color: #f0fdf4;
+  border: 1px solid #bbf7d0;
+  border-radius: var(--radius-sm);
+  padding: var(--spacing-md);
+}
+
+/* ユーティリティクラス */
+.visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0, 0, 0, 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+.text-center {
+  text-align: center;
+}
+
+.mb-0 {
+  margin-bottom: 0;
+}
+
+.mt-0 {
+  margin-top: 0;
+}
