@@ -499,7 +499,7 @@ input[type="number"]:focus {
 }
 
 .organizer-wrapper .input-label {
-    color: #a5b4fc;
+    color: #314ddb;
     font-weight: 500;
 }
 
@@ -638,7 +638,7 @@ input.error {
 }
 
 .participant-wrapper .input-label {
-    color: #86efac;
+    color: #06742e;
     font-weight: 500;
 }
 
