@@ -5,11 +5,13 @@
 warikan-app/
 ├── index.html          # メインHTMLファイル（エントリーポイント）
 ├── main.js            # JavaScriptロジック（すべての機能を含む）
+├── package.json       # npm設定と依存関係
+├── vitest.config.js   # Vitestテスト設定
 ├── README.md          # プロジェクトドキュメント
 ├── .git/              # Gitリポジトリ
-├── .gitignore         # Git無視ファイル（存在しないが推奨）
+├── .gitignore         # Git無視ファイル
 ├── .claude/           # Claude Code設定
-│   └── settings.local.json
+│   └── commands/      # カスタムコマンド
 └── .kiro/             # Kiro spec-driven開発設定
     └── steering/      # Steeringドキュメント
         ├── product.md # 製品概要
@@ -19,22 +21,45 @@ warikan-app/
 
 ## サブディレクトリ構造
 ### 現状
-- サブディレクトリなし（フラット構造）
+```
+warikan-app/
+├── index.html          # メインHTMLファイル
+├── assets/             # 静的リソース
+│   └── css/
+│       └── styles.css  # CSSスタイルシート
+├── tests/              # テストコード
+│   ├── setup.js        # テスト設定
+│   ├── calculation.test.js
+│   └── validation.test.js
+├── .claude/            # Claude Code設定
+│   └── commands/       # カスタムコマンド
+├── .kiro/              # Kiro設定
+│   └── steering/       # ステアリングドキュメント
+└── node_modules/       # npm依存関係（git無視）
+```
 
-### 推奨される改善案
+### 今後の拡張案
 ```
 warikan-app/
 ├── index.html
-├── assets/            # 静的リソース
+├── assets/
 │   ├── css/
-│   │   └── styles.css # CSSを分離
+│   │   ├── styles.css
+│   │   └── components.css  # コンポーネントごとのCSS
 │   ├── js/
 │   │   ├── main.js
-│   │   └── utils.js   # ユーティリティ関数
-│   └── audio/         # 音声ファイル（将来的）
-├── tests/             # テストコード
-├── docs/              # ドキュメント
-└── examples/          # 使用例
+│   │   ├── modules/       # 機能モジュール
+│   │   │   ├── calculator.js
+│   │   │   ├── validator.js
+│   │   │   └── ui.js
+│   │   └── utils.js       # ユーティリティ関数
+│   └── audio/             # 音声ファイル（将来的）
+├── tests/
+│   ├── unit/              # 単体テスト
+│   ├── integration/       # 結合テスト
+│   └── e2e/              # E2Eテスト
+├── docs/                  # ドキュメント
+└── examples/             # 使用例
 ```
 
 ## コード編成パターン
@@ -78,8 +103,8 @@ function playSuccessSound() { ... }
 
 ## インポート/依存関係編成
 ### 現状
-- **依存関係**: なし（ヴァニラJS）
-- **モジュールシステム**: なし
+- **依存関係**: Vitest, jsdom（開発・テスト用）
+- **モジュールシステム**: なし（ヴァニラJS）
 - **読み込み順序**: HTMLでスクリプトをdefer読み込み
 
 ### 改善提案
@@ -151,10 +176,11 @@ function updateState(key, value) {
 ```
 
 ## CSS編成パターン
-### 現状（インラインCSS）
+### 現状（外部CSSファイル）
 - **階層構造**: BEM未使用
 - **命名規則**: ハイフン区切り（kebab-case）
 - **モバイルファースト**: 320pxベース
+- **CSSカスタムプロパティ**: 使用済み（--color-primary, --spacing-*等）
 
 ### 推奨される改善
 ```css
@@ -173,7 +199,12 @@ function updateState(key, value) {
 
 ## テスト構成
 ### 現状
-- **テストなし**: 手動テストのみ
+- **テストフレームワーク**: Vitest + jsdom
+- **テストファイル**:
+  - setup.js（テスト設定）
+  - calculation.test.js（計算ロジックテスト）
+  - validation.test.js（入力検証テスト）
+- **カバレッジ**: 95%以上目標
 
 ### 推奨テスト構成
 ```

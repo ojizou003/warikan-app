@@ -24,6 +24,22 @@
             </div>
         </div>
 
+        <div class="organizer-toggle">
+            <!-- <div class="toggle-description">幹事さん以外で割り勘する場合</div> -->
+            <label class="toggle-label">
+                <input type="checkbox" id="organizerMode">
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">幹事の支払額を固定する</span>
+            </label>
+        </div>
+
+        <div class="input-group organizer-input" id="organizerInput" style="display: none;">
+            <div class="input-wrapper organizer-wrapper">
+                <input type="number" id="organizerPrice" min="0" inputmode="numeric" pattern="[0-9]*" spellcheck="false" autocomplete="off">
+                <span class="input-label">円を幹事が支払う</span>
+            </div>
+        </div>
+
         <button class="calculate-btn" id="action">計算する 🎯</button>
 
         <div class="result-container">
