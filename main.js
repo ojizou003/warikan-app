@@ -4,622 +4,540 @@
  * @description
  * 簡単な割り勘計算を行うWebアプリケーション。
  * 金額と人数を入力すると、一人当たりの金額と余りを計算します。
+ * 履歴機能、幹事負担パターン、シェア機能に対応。
  *
  * @module WarikanApp
- * @version 1.0.0
+ * @version 2.0.0
  * @author Warikan App Team
  */
 
 "use strict";
 
-// DOM要素の取得
-/** @type {HTMLInputElement} 金額入力フィールド */
-const priceInput = document.getElementById('price');
+// インポート
+import { CalculationEngine, CalculationType } from './src/calculation.js';
+import { historyStorage } from './src/storage.js';
+import { OrganizerUI } from './src/components/OrganizerUI.js';
+import { HistoryList } from './src/components/HistoryList.js';
+import { ShareUI } from './src/components/ShareUI.js';
+import { shareManager } from './src/share.js';
 
-/** @type {HTMLInputElement} 人数入力フィールド */
-const countInput = document.getElementById('count');
+// アプリケーションクラス
+class WarikanApp {
+    constructor() {
+        this.calculationEngine = new CalculationEngine();
+        this.storage = historyStorage;
 
-/** @type {HTMLButtonElement} 計算実行ボタン */
-const calculateButton = document.getElementById('action');
+        // UIコンポーネント
+        this.organizerUI = null;
+        this.historyList = null;
+        this.shareUI = null;
 
-/** @type {HTMLDivElement} 結果表示エリア */
-const answerDisplay = document.getElementById('answer');
+        // 状態
+        this.currentResult = null;
+        this.isHistoryVisible = false;
 
-// イベントリスナーの設定
-calculateButton.addEventListener('click', calculateSplit);
-priceInput.addEventListener('input', handleInputChange);
-countInput.addEventListener('input', handleInputChange);
-priceInput.addEventListener('keypress', handleEnterKey);
-countInput.addEventListener('keypress', handleEnterKey);
-
-// 半角数字入力制御のためのイベントリスナー
-priceInput.addEventListener('input', enforceHalfWidthNumbers);
-priceInput.addEventListener('paste', enforceHalfWidthNumbersOnPaste);
-priceInput.addEventListener('focus', disableIME);
-countInput.addEventListener('input', enforceHalfWidthNumbers);
-countInput.addEventListener('paste', enforceHalfWidthNumbersOnPaste);
-countInput.addEventListener('focus', disableIME);
-
-/**
- * 割り勘計算を実行するメイン関数
- *
- * @description
- * ボタンクリック時のアニメーション効果、入力値の取得、バリデーション、
- * 計算実行、結果表示までの一連の処理を管理します。
- *
- * @returns {void}
- */
-function calculateSplit() {
-    // ボタンにアニメーション効果
-    calculateButton.classList.add('pulse');
-    setTimeout(() => calculateButton.classList.remove('pulse'), 500);
-
-    // 入力値の取得
-    /** @type {number} 金額 */
-    const price = parseInt(priceInput.value);
-
-    /** @type {number} 人数 */
-    const count = parseInt(countInput.value);
-
-    // バリデーション
-    if (!isValidInput(price, count)) {
-        return;
+        this.init();
     }
 
-    // 計算実行
-    /** @type {CalculationResult} 計算結果 */
-    const result = performCalculation(price, count);
-
-    // 結果表示
-    displayResult(result);
-}
-
-/**
- * エラー表示を強化
- *
- * @description
- * エラー発生時に詳細なエラー情報と解決策を表示します。
- *
- * @param {ValidationResult} validation - バリデーション結果
- * @param {string} field - エラーが発生したフィールド（'price' または 'count'）
- * @returns {void}
- */
-function displayValidationError(validation, field) {
-    answerDisplay.className = 'fade-in error';
-
-    // エラーメッセージを構築
-    let message = validation.errorMessage;
-
-    // エラーコードに基づいて追加のヒントを表示
-    const hints = getErrorHints(validation.errorCode, field);
-    if (hints) {
-        message += `<div class="error-hint">${hints}</div>`;
+    /**
+     * 初期化
+     */
+    init() {
+        this.setupUI();
+        this.bindEvents();
+        this.loadFromURL();
+        this.initializeStyles();
     }
 
-    answerDisplay.innerHTML = message;
-
-    // 入力フィールドにエラー視覚効果
-    const inputField = field === 'price' ? priceInput : countInput;
-    inputField.classList.add('error');
-    setTimeout(() => {
-        inputField.classList.remove('error');
-    }, 2000);
-}
-
-/**
- * エラーヒントを取得
- *
- * @description
- * エラーコードに基づいてユーザーフレンドリーな解決策を返します。
- *
- * @param {string} errorCode - エラーコード
- * @param {string} field - フィールド名
- * @returns {string|null} エラーヒント
- */
-function getErrorHints(errorCode, field) {
-    const hints = {
-        'PRICE_EMPTY': '例: 1000 と入力してください',
-        'PRICE_NAN': '数字のみを入力してください',
-        'PRICE_TOO_SMALL': '最小金額は1円です',
-        'PRICE_TOO_LARGE': '100億円以下の金額を入力してください',
-        'PRICE_DECIMAL': '小数点は使用できません',
-        'PRICE_TOO_LONG': '12桁以下の数字を入力してください',
-        'COUNT_EMPTY': '例: 5 と入力してください',
-        'COUNT_NAN': '数字のみを入力してください',
-        'COUNT_TOO_SMALL': '最少人数は1人です',
-        'COUNT_TOO_LARGE': '9999人以下の人数を入力してください',
-        'COUNT_DECIMAL': '人数は整数で入力してください',
-        'COUNT_TOO_LONG': '4桁以下の数字を入力してください'
-    };
-
-    return hints[errorCode] || null;
-}
-
-/**
- * 入力変更時の処理
- *
- * @description
- * 両方の入力フィールドが空の場合、表示を初期状態にリセットします。
- *
- * @returns {void}
- */
-function handleInputChange() {
-    // 結果表示を初期化
-    if (priceInput.value === '' && countInput.value === '') {
-        resetDisplay();
-    }
-}
-
-/**
- * Enterキー押下時の処理
- *
- * @description
- * Enterキーが押された場合、計算を実行します。
- *
- * @param {KeyboardEvent} event - キーボードイベント
- * @returns {void}
- */
-function handleEnterKey(event) {
-    if (event.key === 'Enter') {
-        calculateSplit();
-    }
-}
-
-/**
- * 表示を初期状態にリセット
- *
- * @description
- * 結果表示エリアを初期状態に戻します。
- *
- * @returns {void}
- */
-function resetDisplay() {
-    answerDisplay.textContent = '金額と人数を入力してください';
-    answerDisplay.className = '';
-    answerDisplay.style.color = '#666';
-}
-
-/**
- * 入力値のバリデーション
- *
- * @description
- * 金額と人数の入力値を詳細に検証します。
- * 境界値チェック、文字数制限、実用範囲の検証を行います。
- *
- * @param {number} price - 金額
- * @param {number} count - 人数
- * @returns {boolean} バリデーション結果（true: 有効, false: 無効）
- */
-function isValidInput(price, count) {
-    answerDisplay.className = 'fade-in';
-
-    // 金額のバリデーション
-    const priceValidation = validatePrice(price);
-    if (!priceValidation.isValid) {
-        answerDisplay.textContent = priceValidation.errorMessage;
-        answerDisplay.classList.add('error');
-        return false;
-    }
-
-    // 人数のバリデーション
-    const countValidation = validateCount(count);
-    if (!countValidation.isValid) {
-        answerDisplay.textContent = countValidation.errorMessage;
-        answerDisplay.classList.add('error');
-        return false;
-    }
-
-    return true;
-}
-
-/**
- * 金額の詳細バリデーション
- *
- * @description
- * 金額の入力値を詳細に検証します。
- * 上限・下限、実用性、文字数などのチェックを行います。
- *
- * @param {number} price - 検証する金額
- * @returns {ValidationResult} 検証結果
- */
-function validatePrice(price) {
-    // 空の入力チェック
-    if (priceInput.value === '') {
-        return {
-            isValid: false,
-            errorMessage: '金額を入力してください',
-            errorCode: 'PRICE_EMPTY'
-        };
-    }
-
-    // NaNチェック
-    if (isNaN(price)) {
-        return {
-            isValid: false,
-            errorMessage: '有効な数字を入力してください',
-            errorCode: 'PRICE_NAN'
-        };
-    }
-
-    // 下限値チェック（1円未満）
-    if (price < 1) {
-        return {
-            isValid: false,
-            errorMessage: '金額は1円以上で入力してください',
-            errorCode: 'PRICE_TOO_SMALL'
-        };
-    }
-
-    // 上限値チェック（100億円超過）
-    if (price > 10000000000) {
-        return {
-            isValid: false,
-            errorMessage: '金額が大きすぎます。100億円以下で入力してください',
-            errorCode: 'PRICE_TOO_LARGE'
-        };
-    }
-
-    // 実用性チェック（1円未満の端数がある場合）
-    if (!Number.isInteger(price)) {
-        return {
-            isValid: false,
-            errorMessage: '金額は整数で入力してください',
-            errorCode: 'PRICE_DECIMAL'
-        };
-    }
-
-    // 文字数チェック（入力が長すぎる場合）
-    if (priceInput.value.length > 12) {
-        return {
-            isValid: false,
-            errorMessage: '金額の桁数が多すぎます。12桁以下で入力してください',
-            errorCode: 'PRICE_TOO_LONG'
-        };
-    }
-
-    return {
-        isValid: true,
-        errorMessage: '',
-        errorCode: null
-    };
-}
-
-/**
- * 人数の詳細バリデーション
- *
- * @description
- * 人数の入力値を詳細に検証します。
- * 上限・下限、実用性、文字数などのチェックを行います。
- *
- * @param {number} count - 検証する人数
- * @returns {ValidationResult} 検証結果
- */
-function validateCount(count) {
-    // 空の入力チェック
-    if (countInput.value === '') {
-        return {
-            isValid: false,
-            errorMessage: '人数を入力してください',
-            errorCode: 'COUNT_EMPTY'
-        };
-    }
-
-    // NaNチェック
-    if (isNaN(count)) {
-        return {
-            isValid: false,
-            errorMessage: '有効な数字を入力してください',
-            errorCode: 'COUNT_NAN'
-        };
-    }
-
-    // 下限値チェック（1人未満）
-    if (count < 1) {
-        return {
-            isValid: false,
-            errorMessage: '人数は1人以上で入力してください',
-            errorCode: 'COUNT_TOO_SMALL'
-        };
-    }
-
-    // 上限値チェック（9999人超過）
-    if (count > 9999) {
-        return {
-            isValid: false,
-            errorMessage: '人数が多すぎます。9999人以下で入力してください',
-            errorCode: 'COUNT_TOO_LARGE'
-        };
-    }
-
-    // 整数チェック（小数点が含まれる場合）
-    if (!Number.isInteger(count)) {
-        return {
-            isValid: false,
-            errorMessage: '人数は整数で入力してください',
-            errorCode: 'COUNT_DECIMAL'
-        };
-    }
-
-    // 文字数チェック（入力が長すぎる場合）
-    if (countInput.value.length > 4) {
-        return {
-            isValid: false,
-            errorMessage: '人数の桁数が多すぎます。4桁以下で入力してください',
-            errorCode: 'COUNT_TOO_LONG'
-        };
-    }
-
-    return {
-        isValid: true,
-        errorMessage: '',
-        errorCode: null
-    };
-}
-
-/**
- * 計算実行
- *
- * @description
- * 割り勘計算を実行し、一人当たりの金額と余りを計算します。
- *
- * @param {number} price - 総金額
- * @param {number} count - 人数
- * @returns {CalculationResult} 計算結果オブジェクト
- */
-function performCalculation(price, count) {
-    /** @type {number} 一人当たりの金額 */
-    const perPerson = Math.floor(price / count);
-
-    /** @type {number} 余り */
-    const remainder = price % count;
-
-    return {
-        perPerson: perPerson,
-        remainder: remainder,
-        total: price,
-        count: count
-    };
-}
-
-/**
- * 計算結果の表示
- *
- * @description
- * 計算結果を画面に表示します。
- * 割り切れる場合と余りがある場合で表示を切り替えます。
- *
- * @param {CalculationResult} result - 計算結果オブジェクト
- * @returns {void}
- */
-function displayResult(result) {
-    answerDisplay.className = 'fade-in success';
-
-    if (result.remainder === 0) {
-        // 割り切れる場合
-        answerDisplay.innerHTML = `
-            <div class="result-amount">一人 ${result.perPerson.toLocaleString()}円</div>
-            <div class="result-detail">ぴったり割り切れました！ 🎉</div>
-        `;
-    } else {
-        // 余りがある場合
-        answerDisplay.innerHTML = `
-            <div class="result-amount">一人 ${result.perPerson.toLocaleString()}円</div>
-            <div class="result-detail">余りは ${result.remainder.toLocaleString()}円です</div>
-        `;
-    }
-
-    // 音声フィードバック（任意）
-    playSuccessSound();
-}
-
-/**
- * 成功音を再生
- *
- * @description
- * Web Audio APIを使用して計算完了時の成功音を再生します。
- * Audio APIが使用できない場合はサイレントに失敗します。
- *
- * @returns {void}
- */
-function playSuccessSound() {
-    try {
-        /** @type {AudioContext} Web Audio APIコンテキスト */
-        const audioContext = new (window.AudioContext || window.webkitAudioContext)();
-
-        /** @type {OscillatorNode} 音源 */
-        const oscillator = audioContext.createOscillator();
-
-        /** @type {GainNode} 音量制御 */
-        const gainNode = audioContext.createGain();
-
-        oscillator.connect(gainNode);
-        gainNode.connect(audioContext.destination);
-
-        oscillator.frequency.value = 523.25; // C5
-        oscillator.type = 'sine';
-
-        gainNode.gain.setValueAtTime(0.1, audioContext.currentTime);
-        gainNode.gain.exponentialRampToValueAtTime(0.01, audioContext.currentTime + 0.1);
-
-        oscillator.start(audioContext.currentTime);
-        oscillator.stop(audioContext.currentTime + 0.1);
-    } catch (e) {
-        // Audio APIが使えない場合は無視
-        console.log('Audio API not available');
-    }
-}
-
-/**
- * 全角数字を半角数字に変換
- *
- * @description
- * Unicode文字コードの差分を使用して全角数字を半角数字に変換します。
- *
- * @param {string} str - 変換対象の文字列
- * @returns {string} 変換後の文字列
- */
-function convertFullWidthToHalfWidth(str) {
-    return str.replace(/[０-９]/g, function(char) {
-        return String.fromCharCode(char.charCodeAt(0) - 0xFEE0);
-    });
-}
-
-/**
- * 半角数字入力を強制
- *
- * @description
- * 入力フィールドの値をリアルタイムでフィルタリングし、
- * 全角数字を半角に変換し、数字以外の文字を削除します。
- *
- * @param {InputEvent} event - イン力イベント
- * @returns {void}
- */
-function enforceHalfWidthNumbers(event) {
-    const input = event.target;
-    const originalValue = input.value;
-
-    // 全角数字を半角に変換
-    let convertedValue = convertFullWidthToHalfWidth(originalValue);
-
-    // 数字以外の文字を削除
-    convertedValue = convertedValue.replace(/[^0-9]/g, '');
-
-    // 値が変更された場合のみ更新
-    if (originalValue !== convertedValue) {
-        // カーソル位置を維持するために一時的に保存
-        const cursorPosition = input.selectionStart;
-
-        input.value = convertedValue;
-
-        // カーソル位置を復元
-        input.setSelectionRange(cursorPosition, cursorPosition);
-    }
-}
-
-/**
- * ペースト時の半角数字制御
- *
- * @description
-   * ペーストされたテキストをフィルタリングし、数字のみを入力フィールドに挿入します。
- *
- * @param {ClipboardEvent} event - クリップボードイベント
- * @returns {void}
- */
-function enforceHalfWidthNumbersOnPaste(event) {
-    event.preventDefault();
-
-    // クリップボードからテキストを取得
-    const pastedText = (event.clipboardData || window.clipboardData).getData('text');
-
-    // 全角数字を半角に変換し、数字以外を削除
-    let filteredText = convertFullWidthToHalfWidth(pastedText);
-    filteredText = filteredText.replace(/[^0-9]/g, '');
-
-    // 現在のカーソル位置にテキストを挿入
-    const input = event.target;
-    const currentValue = input.value;
-    const cursorPosition = input.selectionStart;
-    const newValue = currentValue.slice(0, cursorPosition) + filteredText + currentValue.slice(input.selectionEnd);
-
-    // 新しい値を設定
-    input.value = newValue;
-
-    // カーソル位置を更新
-    const newCursorPosition = cursorPosition + filteredText.length;
-    input.setSelectionRange(newCursorPosition, newCursorPosition);
-}
-
-/**
- * IMEを無効化
- *
- * @description
- * 日本語入力モードを無効化し、半角数字入力を強制します。
- *
- * @param {FocusEvent} event - フォーカスイベント
- * @returns {void}
- */
-function disableIME(event) {
-    const input = event.target;
-
-    // 日本語IMEを無効化（主要ブラウザ対応）
-    try {
-        input.style.imeMode = 'disabled';
-    } catch (e) {
-        // ime-modeがサポートされていない場合は無視
-    }
-
-    // 入力モードを強制的に半角に設定
-    setTimeout(() => {
-        if (input.value && !/^[0-9]+$/.test(input.value)) {
-            // 不正な文字が含まれている場合はクリア
-            input.value = '';
+    /**
+     * UIを設定
+     */
+    setupUI() {
+        // メインコンテナを取得
+        const mainContainer = document.querySelector('.container');
+        if (!mainContainer) {
+            console.error('メインコンテナが見つかりません');
+            return;
         }
-    }, 0);
-}
 
-/**
- * ページ読み込み時の初期化処理
- *
- * @description
- * DOM読み込み完了後、フォーカス設定、イベントリスナー登録、
- * タッチデバイス向けの最適化を行います。
- *
- * @listens DOMContentLoaded
- * @returns {void}
- */
-document.addEventListener('DOMContentLoaded', function() {
-    // 金額入力フィールドにフォーカス
-    priceInput.focus();
+        // 既存のUIをクリア
+        mainContainer.innerHTML = '';
 
-    // フォームにフォーカス時の視覚効果
-    [priceInput, countInput].forEach(input => {
-        input.addEventListener('focus', function() {
-            this.parentElement.classList.add('fade-in');
+        // ヘッダー
+        const header = document.createElement('header');
+        header.innerHTML = `
+            <h1 style="text-align: center; color: #333; margin-bottom: 32px;">
+                割り勘計算機
+                <span style="font-size: 0.8rem; color: #666; display: block; margin-top: 8px;">
+                    履歴保存・シェア機能付き
+                </span>
+            </h1>
+        `;
+
+        // オーガナイザーUIコンテナ
+        const organizerContainer = document.createElement('div');
+        organizerContainer.id = 'organizer-container';
+
+        // 履歴コンテナ
+        const historyContainer = document.createElement('div');
+        historyContainer.id = 'history-container';
+        historyContainer.style.cssText = `
+            display: none;
+            margin-top: 32px;
+            padding: 24px;
+            background: #f8f9fa;
+            border-radius: 8px;
+        `;
+
+        // シェアUI用オーバーレイ（後で動的に追加）
+        const shareOverlay = document.createElement('div');
+        shareOverlay.id = 'share-overlay';
+
+        mainContainer.appendChild(header);
+        mainContainer.appendChild(organizerContainer);
+        mainContainer.appendChild(historyContainer);
+        document.body.appendChild(shareOverlay);
+
+        // UIコンポーネントを初期化
+        this.organizerUI = new OrganizerUI(organizerContainer, {
+            onCalculate: (result) => this.handleCalculate(result)
         });
-    });
 
-    // タッチデバイス向けの最適化
-    if ('ontouchstart' in window) {
-        // タッチデバイスの場合はフォーカスを自動的にセットしない
-        // （キーボードが自動的に表示されるのを防ぐため）
-
-        // 入力フィールドのタッチフィードバック
-        [priceInput, countInput].forEach(input => {
-            input.addEventListener('touchstart', function() {
-                this.style.transform = 'scale(0.98)';
-                setTimeout(() => {
-                    this.style.transform = '';
-                }, 150);
-            });
+        this.historyList = new HistoryList(historyContainer, {
+            maxDisplayItems: 10,
+            enableAnimation: true
         });
 
-        // ボタンのタッチフィードバック強化
-        calculateButton.addEventListener('touchstart', function() {
-            this.style.transform = 'scale(0.95)';
+        this.shareUI = new ShareUI(shareOverlay);
+    }
+
+    /**
+     * イベントをバインド
+     */
+    bindEvents() {
+        // オーガナイザーUIのアクションイベント
+        this.organizerUI.container.addEventListener('organizerUI:action', (e) => {
+            const { action } = e.detail;
+            this.handleAction(action);
         });
 
-        calculateButton.addEventListener('touchend', function() {
-            setTimeout(() => {
-                this.style.transform = '';
-            }, 150);
+        // 履歴イベント
+        this.historyList.container.addEventListener('historyList:select', (e) => {
+            const { entry } = e.detail;
+            this.loadHistoryEntry(entry);
+        });
+
+        this.historyList.container.addEventListener('historyList:delete', (e) => {
+            const { id } = e.detail;
+            this.deleteHistoryEntry(id);
+        });
+
+        this.historyList.container.addEventListener('historyList:clear', () => {
+            this.clearHistory();
+        });
+
+        // 履歴保存イベント
+        this.organizerUI.container.addEventListener('organizerUI:save', (e) => {
+            const { result, note } = e.detail;
+            this.saveToHistory(result, note);
+        });
+
+        // URL変更イベント（ブラウザの戻る/進む対応）
+        window.addEventListener('popstate', (e) => {
+            if (e.state && e.state.calculation) {
+                this.loadCalculation(e.state.calculation);
+            }
+        });
+
+        // キーボードショートカット
+        document.addEventListener('keydown', (e) => {
+            if (e.ctrlKey || e.metaKey) {
+                switch (e.key) {
+                    case 's':
+                        e.preventDefault();
+                        if (this.currentResult) {
+                            this.saveToHistory(this.currentResult);
+                        }
+                        break;
+                    case 'h':
+                        e.preventDefault();
+                        this.toggleHistory();
+                        break;
+                    case 'Enter':
+                        e.preventDefault();
+                        if (this.currentResult) {
+                            this.shareUI.show(this.currentResult);
+                        }
+                        break;
+                }
+            }
         });
     }
+
+    /**
+     * 計算実行時の処理
+     */
+    handleCalculate(result) {
+        this.currentResult = result;
+
+        // 履歴に自動保存
+        this.saveToHistory(result);
+
+        // URLを更新
+        this.updateURL(result);
+
+        // アクションボタンを表示
+        this.showActionButtons();
+    }
+
+    /**
+     * アクションを処理
+     */
+    handleAction(action) {
+        switch (action) {
+            case 'share':
+                if (this.currentResult) {
+                    this.shareUI.show(this.currentResult);
+                }
+                break;
+
+            case 'save':
+                if (this.currentResult) {
+                    this.saveToHistory(this.currentResult);
+                    this.showNotification('履歴に保存しました');
+                }
+                break;
+
+            case 'history':
+                this.toggleHistory();
+                break;
+
+            case 'clear':
+                this.organizerUI.clear();
+                this.currentResult = null;
+                this.hideActionButtons();
+                this.updateURL(null);
+                break;
+        }
+    }
+
+    /**
+     * 履歴に保存
+     */
+    saveToHistory(result, note = '') {
+        try {
+            const id = this.storage.saveCalculation(result, note);
+            console.log('履歴を保存しました:', id);
+
+            // 履歴表示が有効な場合は更新
+            if (this.isHistoryVisible) {
+                this.refreshHistory();
+            }
+
+            return id;
+        } catch (error) {
+            console.error('履歴の保存に失敗しました:', error);
+            this.showNotification('履歴の保存に失敗しました', true);
+            return null;
+        }
+    }
+
+    /**
+     * 履歴を表示/非表示
+     */
+    toggleHistory() {
+        const historyContainer = document.getElementById('history-container');
+
+        if (this.isHistoryVisible) {
+            historyContainer.style.display = 'none';
+            this.isHistoryVisible = false;
+        } else {
+            historyContainer.style.display = 'block';
+            this.isHistoryVisible = true;
+            this.refreshHistory();
+        }
+    }
+
+    /**
+     * 履歴を更新
+     */
+    refreshHistory() {
+        const history = this.storage.getHistory({ limit: 20 });
+        this.historyList.renderHistoryList(history);
+    }
+
+    /**
+     * 履歴エントリを読み込む
+     */
+    loadHistoryEntry(entry) {
+        // 計算結果を復元
+        const result = entry.calculationResult;
+
+        // UIに値を設定
+        this.loadCalculation(result);
+
+        // 履歴を非表示
+        this.toggleHistory();
+
+        // URLを更新
+        this.updateURL(result);
+    }
+
+    /**
+     * 履歴エントリを削除
+     */
+    deleteHistoryEntry(id) {
+        const success = this.storage.deleteHistoryItem(id);
+        if (success) {
+            this.refreshHistory();
+            this.showNotification('履歴を削除しました');
+        } else {
+            this.showNotification('削除に失敗しました', true);
+        }
+    }
+
+    /**
+     * 履歴をクリア
+     */
+    clearHistory() {
+        if (confirm('すべての履歴を削除してもよろしいですか？')) {
+            this.storage.clearHistory();
+            this.refreshHistory();
+            this.showNotification('履歴をクリアしました');
+        }
+    }
+
+    /**
+     * 計算結果を読み込む
+     */
+    loadCalculation(result) {
+        // 現在のタイプを設定
+        this.organizerUI.selectPattern(result.type);
+
+        // 値を設定
+        const totalInput = document.getElementById('total-amount');
+        const peopleInput = document.getElementById('number-of-people');
+
+        if (totalInput) totalInput.value = result.totalAmount;
+        if (peopleInput) peopleInput.value = result.numberOfPeople;
+
+        // 幹事負担の値を設定
+        switch (result.type) {
+            case CalculationType.ORGANIZER_MORE:
+                const burdenInput = document.getElementById('organizer-burden-more');
+                if (burdenInput && result.organizerBurdenPercent) {
+                    burdenInput.value = result.organizerBurdenPercent;
+                }
+                break;
+
+            case CalculationType.ORGANIZER_LESS:
+                const reductionInput = document.getElementById('organizer-burden-less');
+                if (reductionInput && result.organizerReductionPercent) {
+                    reductionInput.value = result.organizerReductionPercent;
+                }
+                break;
+
+            case CalculationType.ORGANIZER_FIXED:
+                const fixedInput = document.getElementById('organizer-fixed');
+                if (fixedInput && result.organizerFixedAmount) {
+                    fixedInput.value = result.organizerFixedAmount;
+                }
+                break;
+        }
+
+        // 計算を実行して結果を表示
+        this.currentResult = result;
+        this.organizerUI.displayResult(result);
+        this.showActionButtons();
+    }
+
+    /**
+     * URLを更新
+     */
+    updateURL(result) {
+        if (result) {
+            const url = shareManager.encodeToUrl(result);
+            const newUrl = new URL(window.location);
+            newUrl.search = new URL(url).search;
+
+            // 履歴を追加
+            history.pushState({ calculation: result }, '', newUrl);
+        } else {
+            // パラメータをクリア
+            const newUrl = new URL(window.location);
+            newUrl.search = '';
+            history.pushState({}, '', newUrl);
+        }
+    }
+
+    /**
+     * URLから読み込む
+     */
+    loadFromURL() {
+        const input = shareManager.decodeFromUrl();
+        if (input) {
+            // 計算を実行
+            try {
+                const result = this.calculationEngine.calculate(input);
+                this.loadCalculation(result);
+            } catch (error) {
+                console.error('URLからの読み込みに失敗:', error);
+            }
+        }
+    }
+
+    /**
+     * アクションボタンを表示
+     */
+    showActionButtons() {
+        const actionButtons = document.querySelector('[data-element="action-buttons"]');
+        if (actionButtons) {
+            actionButtons.style.display = 'grid';
+        }
+    }
+
+    /**
+     * アクションボタンを非表示
+     */
+    hideActionButtons() {
+        const actionButtons = document.querySelector('[data-element="action-buttons"]');
+        if (actionButtons) {
+            actionButtons.style.display = 'none';
+        }
+    }
+
+    /**
+     * 通知を表示
+     */
+    showNotification(message, isError = false) {
+        const notification = document.createElement('div');
+        notification.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            padding: 16px 24px;
+            background: ${isError ? '#e74c3c' : '#27ae60'};
+            color: white;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);
+            z-index: 10000;
+            font-weight: 500;
+            transform: translateX(400px);
+            transition: transform 0.3s ease;
+        `;
+        notification.textContent = message;
+
+        document.body.appendChild(notification);
+
+        // 表示アニメーション
+        requestAnimationFrame(() => {
+            notification.style.transform = 'translateX(0)';
+        });
+
+        // 3秒後に非表示
+        setTimeout(() => {
+            notification.style.transform = 'translateX(400px)';
+            setTimeout(() => {
+                if (notification.parentNode) {
+                    notification.remove();
+                }
+            }, 300);
+        }, 3000);
+    }
+
+    /**
+     * スタイルを初期化
+     */
+    initializeStyles() {
+        const styleId = 'warikan-app-styles';
+        if (!document.getElementById(styleId)) {
+            const style = document.createElement('style');
+            style.id = styleId;
+            style.textContent = `
+                body {
+                    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', 'Roboto',
+                              'Helvetica Neue', Arial, 'Noto Sans', sans-serif;
+                    line-height: 1.6;
+                    color: #333;
+                    background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+                    min-height: 100vh;
+                    margin: 0;
+                    padding: 20px;
+                }
+
+                .container {
+                    max-width: 800px;
+                    margin: 0 auto;
+                    background: white;
+                    padding: 32px;
+                    border-radius: 16px;
+                    box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+                }
+
+                @media (max-width: 768px) {
+                    body {
+                        padding: 10px;
+                    }
+
+                    .container {
+                        padding: 20px;
+                    }
+                }
+
+                /* 既存のスタイルを維持 */
+                .fade-in {
+                    animation: fadeIn 0.5s ease-in;
+                }
+
+                @keyframes fadeIn {
+                    from { opacity: 0; transform: translateY(10px); }
+                    to { opacity: 1; transform: translateY(0); }
+                }
+
+                .pulse {
+                    animation: pulse 0.5s ease;
+                }
+
+                @keyframes pulse {
+                    0% { transform: scale(1); }
+                    50% { transform: scale(1.05); }
+                    100% { transform: scale(1); }
+                }
+
+                .error {
+                    animation: shake 0.5s ease;
+                }
+
+                @keyframes shake {
+                    0%, 100% { transform: translateX(0); }
+                    25% { transform: translateX(-5px); }
+                    75% { transform: translateX(5px); }
+                }
+            `;
+            document.head.appendChild(style);
+        }
+    }
+}
+
+// アプリケーションを初期化
+document.addEventListener('DOMContentLoaded', () => {
+    new WarikanApp();
 });
 
-/**
- * バリデーション結果の型定義
- * @typedef {Object} ValidationResult
- * @property {boolean} isValid - 検証結果（true: 有効, false: 無効）
- * @property {string} errorMessage - エラーメッセージ
- * @property {string|null} errorCode - エラーコード
- */
+// エラーハンドリング
+window.addEventListener('error', (e) => {
+    console.error('アプリケーションエラー:', e.error);
+});
 
-/**
- * 計算結果の型定義
- * @typedef {Object} CalculationResult
- * @property {number} perPerson - 一人当たりの金額
- * @property {number} remainder - 余り
- * @property {number} total - 総金額
- * @property {number} count - 人数
- */
-
+// Service Worker登録（PWA対応）
+if ('serviceWorker' in navigator) {
+    window.addEventListener('load', () => {
+        navigator.serviceWorker.register('/sw.js')
+            .then(registration => {
+                console.log('SW registered: ', registration);
+            })
+            .catch(registrationError => {
+                console.log('SW registration failed: ', registrationError);
+            });
+    });
+}
