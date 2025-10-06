@@ -40,6 +40,22 @@
             </div>
         </div>
 
+        <div class="participant-toggle">
+            <!-- <div class="toggle-description">参加者の支払額を固定する場合</div> -->
+            <label class="toggle-label">
+                <input type="checkbox" id="participantMode">
+                <span class="toggle-slider"></span>
+                <span class="toggle-text">参加者の支払額を固定する</span>
+            </label>
+        </div>
+
+        <div class="input-group participant-input" id="participantInput" style="display: none;">
+            <div class="input-wrapper participant-wrapper">
+                <input type="number" id="participantPrice" min="0" inputmode="numeric" pattern="[0-9]*" spellcheck="false" autocomplete="off">
+                <span class="input-label">円を参加者が一人支払う</span>
+            </div>
+        </div>
+
         <button class="calculate-btn" id="action">計算する 🎯</button>
 
         <div class="result-container">
