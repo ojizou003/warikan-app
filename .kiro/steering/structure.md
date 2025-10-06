@@ -32,7 +32,7 @@ warikan-app/
 │   ├── setup.js        # テスト設定
 │   ├── calculation.test.js  # 計算ロジックテスト
 │   └── validation.test.js   # 入力検証テスト
-├── tests/              # セキュリティテスト
+├── tests/              # セキュリティ・結合テスト
 │   └── security.test.js     # セキュリティテスト
 ├── .claude/            # Claude Code設定
 │   └── commands/       # カスタムコマンド

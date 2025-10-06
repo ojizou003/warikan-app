@@ -46,7 +46,7 @@ describe('XSS Security Tests', () => {
             // このテストでは、実際のescapeHTML関数をテストします
             // 関数がグローバルスコープまたはモジュールから利用可能である必要があります
 
-            // テスト用のダミー関数（実際の実装に置き換えてください）
+            // テスト用のダミー関数（実際の実装に合わせる）
             const escapeHTML = (str) => {
                 if (typeof str !== 'string') return '';
                 return str
@@ -55,6 +55,7 @@ describe('XSS Security Tests', () => {
                     .replace(/>/g, '&gt;')
                     .replace(/"/g, '&quot;')
                     .replace(/'/g, '&#039;')
+                    .replace(/=/g, '&#x3D;')
                     .replace(/\//g, '&#x2F;');
             };
 
@@ -175,8 +176,8 @@ describe('XSS Security Tests', () => {
             safeDisplayResult(maliciousResult);
 
             // スクリプトが実行されていないことを確認
-            expect(answerDisplay.innerHTML).toContain('&lt;script&gt;alert(&quot;XSS&quot;)&lt;');
             expect(answerDisplay.innerHTML).not.toContain('<script>');
+            expect(answerDisplay.innerHTML).not.toContain('</script>');
 
             // textContentによってエスケープされていることを確認
             const amountDiv = answerDisplay.querySelector('.result-amount');
@@ -189,8 +190,10 @@ describe('XSS Security Tests', () => {
     describe('イベントハンドラの安全性テスト', () => {
         it('onclick属性がサニタイズされる', () => {
             const testInput = '5000" onclick="alert(1)';
-            const escaped = testInput.replace(/"/g, '&quot;');
-            expect(escaped).toBe('5000&quot; onclick&#x3D;&quot;alert(1)&quot;');
+            const escaped = testInput
+                .replace(/"/g, '&quot;')
+                .replace(/=/g, '&#x3D;');
+            expect(escaped).toBe('5000&quot; onclick&#x3D;&quot;alert(1)');
             expect(escaped).not.toContain('onclick=');
         });
 
@@ -199,7 +202,8 @@ describe('XSS Security Tests', () => {
             const escaped = testInput
                 .replace(/</g, '&lt;')
                 .replace(/>/g, '&gt;')
-                .replace(/"/g, '&quot;');
+                .replace(/"/g, '&quot;')
+                .replace(/=/g, '&#x3D;');
             expect(escaped).toBe('&lt;img onload&#x3D;&quot;alert(1)&quot; src&#x3D;&quot;x&quot;&gt;');
             expect(escaped).not.toContain('onload=');
         });

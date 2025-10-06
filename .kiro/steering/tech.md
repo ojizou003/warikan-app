@@ -109,7 +109,7 @@ git push origin feature
   - HTMLエスケープ関数を実装（escapeHTML）
   - DOM操作をtextContent/createElementに変更
   - 入力検証に危険なパターンチェックを追加
-  - セキュリティテストを実装
+  - セキュリティテストを実装（tests/security.test.js）
 - **CSP**: 未設定（必要に応じて）
 - **HTTPS推奨**: 生産環境では必須
 - **入力サニタイズ**: 数値入力の検証強化
@@ -123,9 +123,9 @@ git push origin feature
 - **Vitest**: 高速な単体テストフレームワーク
 - **jsdom**: DOMテスト環境
 - **テスト対象**: 
-  - 計算ロジック（calculation.test.js）
-  - 入力検証（validation.test.js）
-  - セキュリティ（security.test.js）
+  - 計算ロジック（test/calculation.test.js）
+  - 入力検証（test/validation.test.js）
+  - セキュリティ（tests/security.test.js）
 - **カバレッジ**: 95%以上のテストカバレッジを目標
 
 ## デプロイ

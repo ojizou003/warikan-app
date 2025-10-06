@@ -28,6 +28,7 @@ function escapeHTML(str) {
     .replace(/>/g, '&gt;')
     .replace(/"/g, '&quot;')
     .replace(/'/g, '&#039;')
+    .replace(/=/g, '&#x3D;')
     .replace(/\//g, '&#x2F;');
 }
 
@@ -49,6 +50,12 @@ const organizerModeToggle = document.getElementById('organizerMode');
 
 /** @type {HTMLInputElement} 幹事支払額入力フィールド */
 const organizerPriceInput = document.getElementById('organizerPrice');
+/** @type {HTMLInputElement} 参加者モードトグル */
+const participantModeToggle = document.getElementById('participantMode');
+/** @type {HTMLInputElement} 参加者支払額入力フィールド */
+const participantPriceInput = document.getElementById('participantPrice');
+/** @type {HTMLDivElement} 参加者入力エリア */
+const participantInputArea = document.getElementById('participantInput');
 
 /** @type {HTMLDivElement} 幹事入力エリア */
 const organizerInputArea = document.getElementById('organizerInput');
@@ -66,6 +73,13 @@ organizerPriceInput.addEventListener('input', handleOrganizerPriceChange);
 organizerPriceInput.addEventListener('keypress', handleEnterKey);
 organizerPriceInput.addEventListener('paste', enforceHalfWidthNumbersOnPaste);
 organizerPriceInput.addEventListener('focus', disableIME);
+
+// 参加者モード関連のイベントリスナー
+participantModeToggle.addEventListener('change', handleParticipantModeToggle);
+participantPriceInput.addEventListener('input', handleParticipantPriceChange);
+participantPriceInput.addEventListener('keypress', handleEnterKey);
+participantPriceInput.addEventListener('paste', enforceHalfWidthNumbersOnPaste);
+participantPriceInput.addEventListener('focus', disableIME);
 
 // 半角数字入力制御のためのイベントリスナー
 priceInput.addEventListener('input', enforceHalfWidthNumbers);
@@ -201,15 +215,20 @@ function handleInputChange() {
  */
 function handleOrganizerModeToggle(event) {
     const isEnabled = event.target.checked;
-    
+
+    // 参加者モードとの排他制御
     if (isEnabled) {
+        participantModeToggle.checked = false;
+        participantInputArea.style.display = 'none';
+        participantPriceInput.value = '';
+
         organizerInputArea.style.display = 'block';
         organizerPriceInput.focus();
     } else {
         organizerInputArea.style.display = 'none';
         organizerPriceInput.value = '';
     }
-    
+
     // 結果表示をリセット
     resetDisplay();
 }
@@ -224,6 +243,51 @@ function handleOrganizerModeToggle(event) {
  */
 function handleOrganizerPriceChange() {
     if (organizerPriceInput.value === '' && 
+        priceInput.value === '' && 
+        countInput.value === '') {
+        resetDisplay();
+    }
+}
+
+/**
+ * 参加者モードトグルの処理
+ *
+ * @description
+ * 参加者モードのオン／オフを切り替えます。
+ *
+ * @param {Event} event - チェンジイベント
+ * @returns {void}
+ */
+function handleParticipantModeToggle(event) {
+    const isEnabled = event.target.checked;
+    
+    // 幹事モードとの排他制御
+    if (isEnabled) {
+        organizerModeToggle.checked = false;
+        organizerInputArea.style.display = 'none';
+        organizerPriceInput.value = '';
+        
+        participantInputArea.style.display = 'block';
+        participantPriceInput.focus();
+    } else {
+        participantInputArea.style.display = 'none';
+        participantPriceInput.value = '';
+    }
+    
+    // 結果表示をリセット
+    resetDisplay();
+}
+
+/**
+ * 参加者支払額入力変更時の処理
+ *
+ * @description
+ * 参加者支払額が入力された場合、表示を初期状態にリセットします。
+ *
+ * @returns {void}
+ */
+function handleParticipantPriceChange() {
+    if (participantPriceInput.value === '' && 
         priceInput.value === '' && 
         countInput.value === '') {
         resetDisplay();
@@ -567,6 +631,104 @@ function validateOrganizerPrice() {
 }
 
 /**
+ * 参加者支払額のバリデーション
+ *
+ * @description
+ * 参加者が支払う金額の入力値を検証します。
+ *
+ * @returns {boolean} バリデーション結果（true: 有効, false: 無効）
+ */
+function validateParticipantPrice() {
+    const participantPrice = parseInt(participantPriceInput.value);
+    const totalPrice = parseInt(priceInput.value);
+    const totalCount = parseInt(countInput.value);
+    
+    // 空の入力チェック
+    if (participantPriceInput.value === '') {
+        answerDisplay.textContent = '参加者の支払額を入力してください';
+        answerDisplay.className = 'fade-in error';
+        participantPriceInput.classList.add('error');
+        setTimeout(() => {
+            participantPriceInput.classList.remove('error');
+        }, 2000);
+        return false;
+    }
+    
+    // NaNチェック
+    if (isNaN(participantPrice)) {
+        answerDisplay.textContent = '有効な数字を入力してください';
+        answerDisplay.className = 'fade-in error';
+        participantPriceInput.classList.add('error');
+        setTimeout(() => {
+            participantPriceInput.classList.remove('error');
+        }, 2000);
+        return false;
+    }
+    
+    // 下限値チェック
+    if (participantPrice < 0) {
+        answerDisplay.textContent = '参加者の支払額は0円以上で入力してください';
+        answerDisplay.className = 'fade-in error';
+        participantPriceInput.classList.add('error');
+        setTimeout(() => {
+            participantPriceInput.classList.remove('error');
+        }, 2000);
+        return false;
+    }
+    
+    // 上限値チェック（総額／人数の床関数）
+    const maxPrice = Math.floor(totalPrice / totalCount);
+    if (participantPrice > maxPrice) {
+        answerDisplay.textContent = `参加者の支払額は一人あたり${maxPrice.toLocaleString()}円以下で入力してください`;
+        answerDisplay.className = 'fade-in error';
+        participantPriceInput.classList.add('error');
+        setTimeout(() => {
+            participantPriceInput.classList.remove('error');
+        }, 2000);
+        return false;
+    }
+    
+    // 総額超過チェック（参加者全員の支払額合計）
+    const totalParticipantPayment = participantPrice * (totalCount - 1);
+    if (totalParticipantPayment >= totalPrice) {
+        answerDisplay.textContent = '参加者の支払額の合計が総額を超えています';
+        answerDisplay.className = 'fade-in error';
+        participantPriceInput.classList.add('error');
+        setTimeout(() => {
+            participantPriceInput.classList.remove('error');
+        }, 2000);
+        return false;
+    }
+
+    // XSS防止：危険な文字列パターンをチェック
+    const dangerousPatterns = [
+        /<script/i,
+        /javascript:/i,
+        /on\w+\s*=/i,
+        /&lt;/i,
+        /&gt;/i,
+        /&amp;/i,
+        /&quot;/i,
+        /&#039;/i,
+        /&#x2F;/i
+    ];
+
+    for (const pattern of dangerousPatterns) {
+        if (pattern.test(participantPriceInput.value)) {
+            answerDisplay.textContent = '無効な文字が含まれています';
+            answerDisplay.className = 'fade-in error';
+            participantPriceInput.classList.add('error');
+            setTimeout(() => {
+                participantPriceInput.classList.remove('error');
+            }, 2000);
+            return false;
+        }
+    }
+
+    return true;
+}
+
+/**
  * 計算実行
  *
  * @description
@@ -607,6 +769,34 @@ function performCalculation(price, count) {
         };
     }
     
+    // 参加者モードがオンの場合
+    if (participantModeToggle.checked) {
+        const participantPrice = parseInt(participantPriceInput.value);
+        const participantCount = count - 1;
+        
+        // 参加者が1人以下の場合はエラー
+        if (participantCount <= 0) {
+            answerDisplay.textContent = '参加者モードでは2人以上必要です';
+            answerDisplay.className = 'fade-in error';
+            return null;
+        }
+        
+        // 幹事の支払額を計算
+        const totalParticipantPayment = participantPrice * participantCount;
+        const organizerPrice = price - totalParticipantPayment;
+        
+        return {
+            perPerson: participantPrice,
+            remainder: price - (participantPrice * count), // 実際の余りを計算
+            total: price,
+            count: count,
+            organizerPrice: organizerPrice,
+            participantCount: participantCount,
+            isParticipantMode: true,
+            participantPrice: participantPrice
+        };
+    }
+    
     // 通常の割り勘計算
     const perPerson = Math.floor(price / count);
     const remainder = price % count;
@@ -616,7 +806,8 @@ function performCalculation(price, count) {
         remainder: remainder,
         total: price,
         count: count,
-        isOrganizerMode: false
+        isOrganizerMode: false,
+        isParticipantMode: false
     };
 }
 
@@ -659,6 +850,25 @@ function displayResult(result) {
 
         answerDisplay.appendChild(organizerDiv);
         answerDisplay.appendChild(participantDiv);
+        answerDisplay.appendChild(detailDiv);
+    } else if (result.isParticipantMode) {
+        // 参加者モードの場合
+        const participantDiv = document.createElement('div');
+        participantDiv.className = 'result-amount';
+        participantDiv.textContent = `参加者: 一人 ${result.participantPrice.toLocaleString()}円`;
+
+        const organizerDiv = document.createElement('div');
+        organizerDiv.className = 'result-amount';
+        organizerDiv.textContent = `幹事: ${result.organizerPrice.toLocaleString()}円`;
+
+        const detailDiv = document.createElement('div');
+        detailDiv.className = 'result-detail';
+        detailDiv.textContent = result.remainder === 0
+            ? 'ぴったり割り切れました！ 🎉'
+            : `差額は ${result.remainder.toLocaleString()}円です`;
+
+        answerDisplay.appendChild(participantDiv);
+        answerDisplay.appendChild(organizerDiv);
         answerDisplay.appendChild(detailDiv);
     } else {
         // 通常の割り勘の場合
@@ -845,6 +1055,10 @@ document.addEventListener('DOMContentLoaded', function() {
             this.parentElement.classList.add('fade-in');
         });
     });
+
+    // トグルのイベントリスナーを設定
+    organizerModeToggle.addEventListener('change', handleOrganizerModeToggle);
+    participantModeToggle.addEventListener('change', handleParticipantModeToggle);
 
     // タッチデバイス向けの最適化
     if ('ontouchstart' in window) {
