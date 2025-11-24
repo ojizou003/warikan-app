@@ -2,24 +2,24 @@
 
 /* CSSカスタムプロパティ */
 :root {
-  /* カラーパレット */
-  --color-primary: #667eea;
-  --color-primary-dark: #764ba2;
+  /* カラーパレット - ダークエレガント */
+  --color-primary: #d4af37;
+  --color-primary-dark: #b8941f;
   --color-white: #ffffff;
-  --color-gray-light: #f8f9fa;
-  --color-gray-medium: #e0e0e0;
-  --color-gray-dark: #666;
-  --color-gray-darker: #333;
-  --color-success: #27ae60;
-  --color-error: #e74c3c;
+  --color-gray-light: #3a3f54;
+  --color-gray-medium: #5a5f74;
+  --color-gray-dark: #e8e8e8;
+  --color-gray-darker: #ffffff;
+  --color-success: #d4af37;
+  --color-error: #ff6b6b;
   
-  /* シャドウ */
-  --shadow-light: 0 10px 25px rgba(0, 0, 0, 0.1);
-  --shadow-medium: 0 20px 40px rgba(0, 0, 0, 0.1);
-  --shadow-button: 0 4px 15px rgba(102, 126, 234, 0.3);
-  --shadow-button-hover: 0 6px 20px rgba(102, 126, 234, 0.4);
-  --shadow-input-focus: 0 4px 12px rgba(102, 126, 234, 0.2);
-  --shadow-input-touch: 0 0 0 3px rgba(102, 126, 234, 0.3);
+  /* シャドウ - ダークエレガント */
+  --shadow-light: 0 10px 25px rgba(0, 0, 0, 0.5);
+  --shadow-medium: 0 20px 40px rgba(0, 0, 0, 0.6);
+  --shadow-button: 0 4px 15px rgba(212, 175, 55, 0.4);
+  --shadow-button-hover: 0 6px 20px rgba(212, 175, 55, 0.6);
+  --shadow-input-focus: 0 4px 12px rgba(212, 175, 55, 0.3);
+  --shadow-input-touch: 0 0 0 3px rgba(212, 175, 55, 0.4);
   
   /* スペーシング */
   --spacing-xs: 5px;
@@ -71,7 +71,7 @@
 /* 基本要素 */
 body {
   font-family: var(--font-family);
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
+  background: linear-gradient(135deg, #1a1f3a 0%, #2c2c34 100%);
   min-height: 100vh;
   display: flex;
   justify-content: center;
@@ -82,7 +82,7 @@ body {
 
 /* コンテナ */
 .container {
-  background: var(--color-white);
+  background: #3a3f54;
   border-radius: var(--radius-2xl);
   box-shadow: var(--shadow-medium);
   padding: var(--spacing-xl);
@@ -93,7 +93,7 @@ body {
 
 /* ヘッダー */
 h1 {
-  color: var(--color-gray-darker);
+  color: #ffffff;
   font-size: var(--font-size-4xl);
   margin-bottom: var(--spacing-xs);
   font-weight: var(--font-weight-bold);
@@ -128,19 +128,20 @@ input[type="number"] {
   width: 120px;
   padding: 15px;
   font-size: var(--font-size-lg);
-  border: 2px solid var(--color-gray-medium);
+  border: 2px solid #b8941f;
   border-radius: var(--radius-md);
   text-align: center;
   transition: all var(--transition-fast);
-  background: var(--color-gray-light);
+  background: #2c2f3e;
+  color: #ffffff;
   /* IMEを無効化（IE/Edge向け） */
   ime-mode: disabled;
 }
 
 input[type="number"]:focus {
   outline: none;
-  border-color: var(--color-primary);
-  background: var(--color-white);
+  border-color: #d4af37;
+  background: #3a3d4c;
   transform: translateY(-2px);
   box-shadow: var(--shadow-input-focus);
 }
@@ -155,14 +156,14 @@ input[type="number"]:focus {
 
 .input-label {
   font-size: var(--font-size-md);
-  color: var(--color-gray-dark);
+  color: #e8e8e8;
   font-weight: var(--font-weight-normal);
 }
 
 /* ボタン */
 .calculate-btn {
-  background: linear-gradient(135deg, var(--color-primary) 0%, var(--color-primary-dark) 100%);
-  color: var(--color-white);
+  background: linear-gradient(135deg, #d4af37 0%, #f4e4c1 100%);
+  color: #1a1f3a;
   border: none;
   padding: 18px 40px;
   font-size: var(--font-size-lg);
@@ -187,18 +188,19 @@ input[type="number"]:focus {
 .result-container {
   margin-top: var(--spacing-lg);
   padding: 25px;
-  background: var(--color-gray-light);
+  background: #2c2f3e;
   border-radius: var(--radius-xl);
   min-height: 80px;
   display: flex;
   align-items: center;
   justify-content: center;
+  border: 1px solid rgba(212, 175, 55, 0.3);
 }
 
 #answer {
   font-size: var(--font-size-xl);
   font-weight: var(--font-weight-medium);
-  color: var(--color-gray-darker);
+  color: #ffffff;
   line-height: 1.6;
 }
 
@@ -212,14 +214,14 @@ input[type="number"]:focus {
 
 .result-amount {
   font-size: 2rem;
-  color: var(--color-primary);
+  color: #d4af37;
   font-weight: var(--font-weight-bold);
   margin: var(--spacing-sm) 0;
 }
 
 .result-detail {
   font-size: var(--font-size-md);
-  color: var(--color-gray-dark);
+  color: #e8e8e8;
   margin-top: var(--spacing-sm);
 }
 
@@ -244,7 +246,7 @@ input[type="number"]:focus {
 
   .calculate-btn:active {
     transform: scale(0.98);
-    box-shadow: 0 2px 10px rgba(102, 126, 234, 0.3);
+    box-shadow: 0 2px 10px rgba(212, 175, 55, 0.4);
   }
 }
 
@@ -418,10 +420,10 @@ input[type="number"]:focus {
 .organizer-toggle {
     margin: 20px 0;
     padding: 15px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(212, 175, 55, 0.1);
     border-radius: 10px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .toggle-description {
@@ -451,7 +453,7 @@ input[type="number"]:focus {
     display: inline-block;
     width: 50px;
     height: 26px;
-    background: rgba(255, 255, 255, 0.2);
+    background: rgba(92, 92, 92, 0.4);
     border-radius: 26px;
     transition: all 0.3s ease;
     margin-right: 12px;
@@ -472,7 +474,7 @@ input[type="number"]:focus {
 }
 
 .toggle-label input:checked + .toggle-slider {
-    background: #667eea;
+    background: linear-gradient(135deg, #d4af37 0%, #b8941f 100%);
 }
 
 .toggle-label input:checked + .toggle-slider::before {
@@ -488,9 +490,9 @@ input[type="number"]:focus {
 .organizer-input {
     margin-top: 15px;
     padding: 15px;
-    background: rgba(102, 126, 234, 0.1);
+    background: rgba(212, 175, 55, 0.08);
     border-radius: 10px;
-    border: 1px solid rgba(102, 126, 234, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.3);
     animation: slideDown 0.3s ease-out;
 }
 
@@ -499,13 +501,13 @@ input[type="number"]:focus {
 }
 
 .organizer-wrapper .input-label {
-    color: #314ddb;
+    color: #f4e4c1;
     font-weight: 500;
 }
 
 .organizer-wrapper input:focus {
-    border-color: #667eea;
-    box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    border-color: #d4af37;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
 
 @keyframes slideDown {
@@ -561,8 +563,8 @@ input[type="number"]:focus {
 /* エラー状態 */
 .error {
   color: var(--color-error) !important;
-  background-color: #fdf2f2;
-  border: 1px solid #fecaca;
+  background-color: rgba(255, 107, 107, 0.1);
+  border: 1px solid rgba(255, 107, 107, 0.3);
   border-radius: var(--radius-sm);
   padding: var(--spacing-md);
 }
@@ -575,7 +577,7 @@ input.error {
 
 .error-hint {
   font-size: var(--font-size-xs);
-  color: #9ca3af;
+  color: #b0b0b0;
   margin-top: var(--spacing-xs);
   font-style: italic;
 }
@@ -583,8 +585,8 @@ input.error {
 /* 成功状態 */
 .success {
   color: var(--color-success) !important;
-  background-color: #f0fdf4;
-  border: 1px solid #bbf7d0;
+  background-color: rgba(212, 175, 55, 0.1);
+  border: 1px solid rgba(212, 175, 55, 0.3);
   border-radius: var(--radius-sm);
   padding: var(--spacing-md);
 }
@@ -618,18 +620,18 @@ input.error {
 .participant-toggle {
     margin: 20px 0;
     padding: 15px;
-    background: rgba(0, 0, 0, 0.3);
+    background: rgba(212, 175, 55, 0.1);
     border-radius: 10px;
-    border: 2px solid rgba(255, 255, 255, 0.3);
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.3);
+    border: 2px solid rgba(212, 175, 55, 0.3);
+    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.5);
 }
 
 .participant-input {
     margin-top: 15px;
     padding: 15px;
-    background: rgba(34, 197, 94, 0.1);
+    background: rgba(212, 175, 55, 0.08);
     border-radius: 10px;
-    border: 1px solid rgba(34, 197, 94, 0.3);
+    border: 1px solid rgba(212, 175, 55, 0.3);
     animation: slideDown 0.3s ease-out;
 }
 
@@ -638,11 +640,11 @@ input.error {
 }
 
 .participant-wrapper .input-label {
-    color: #06742e;
+    color: #f4e4c1;
     font-weight: 500;
 }
 
 .participant-wrapper input:focus {
-    border-color: #22c55e;
-    box-shadow: 0 0 0 3px rgba(34, 197, 94, 0.1);
+    border-color: #d4af37;
+    box-shadow: 0 0 0 3px rgba(212, 175, 55, 0.2);
 }
