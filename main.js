@@ -128,7 +128,7 @@ function calculateSplit() {
   displayResult(result);
 
   // 結果表示エリアへスクロール
-  answerDisplay.scrollIntoView({ behavior: "smooth", block: "nearest" });
+  window.scrollTo({ top: document.body.scrollHeight, behavior: "smooth" });
 }
 
 /**
