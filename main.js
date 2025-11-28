@@ -900,6 +900,8 @@ function displayResult(result) {
   playSuccessSound();
 }
 
+let audioContext = null;
+
 /**
  * 成功音を再生
  *
@@ -911,9 +913,13 @@ function displayResult(result) {
  */
 function playSuccessSound() {
   try {
-    /** @type {AudioContext} Web Audio APIコンテキスト */
-    const audioContext = new (window.AudioContext ||
-      window.webkitAudioContext)();
+    if (!audioContext) {
+      audioContext = new (window.AudioContext || window.webkitAudioContext)();
+    }
+
+    if (audioContext.state === "suspended") {
+      audioContext.resume();
+    }
 
     /** @type {OscillatorNode} 音源 */
     const oscillator = audioContext.createOscillator();
@@ -937,7 +943,7 @@ function playSuccessSound() {
     oscillator.stop(audioContext.currentTime + 0.1);
   } catch (e) {
     // Audio APIが使えない場合は無視
-    console.log("Audio API not available");
+    console.error("Audio API error:", e);
   }
 }
 
